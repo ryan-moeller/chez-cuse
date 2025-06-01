@@ -1,0 +1,23 @@
+freebsd_instance:
+  cpu: 1
+  memory: 1G
+
+task:
+  matrix:
+    - name: releases/amd64/13.5-RELEASE
+      freebsd_instance:
+        image_family: freebsd-13-5
+    - name: releases/amd64/14.2-RELEASE
+      freebsd_instance:
+        image_family: freebsd-14-2
+    - name: snapshots/amd64/15.0-CURRENT
+      freebsd_instance:
+        image_family: freebsd-15-0-snap
+  stateful: false
+  tests_file:
+    path: tests.ss
+    from_contents: |
+      (import (cuse))
+      ; TODO: functional testing
+  setup_script: pkg install -y chez-scheme
+  test_script: chez-scheme tests.ss
