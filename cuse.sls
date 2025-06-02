@@ -128,9 +128,15 @@
     [uid unsigned-32]
     [gid unsigned-32])
 
-  (define cuse-dev-create
-    (foreign-procedure (__varargs_after 7)
-      "cuse_dev_create" ((* cuse-methods) void* void* uid gid int string) cuse-dev*))
+  (define-syntax cuse-dev-create
+    (syntax-rules ()
+      [(_ methods priv0 priv1 uid_ gid_ permission fmt)
+       (cuse-dev-create methods priv0 priv1 uid_ gid_ permission fmt ())]
+      [(_ methods priv0 priv1 uid_ gid_ permission fmt (t ...) e ...)
+       ((foreign-procedure (__varargs_after 7)
+			   "cuse_dev_create"
+			   ((* cuse-methods) void* void* uid gid int string t ...) cuse-dev*)
+	methods priv0 priv1 uid_ gid_ permission fmt e ...)]))
 
   (define cuse-dev-destroy
     (foreign-procedure "cuse_dev_destroy" (cuse-dev*) void))
