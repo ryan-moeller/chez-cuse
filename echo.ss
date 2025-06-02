@@ -1,24 +1,63 @@
 (import (cuse))
 
+(define-ftype echo-handle
+  (struct
+    [data void*]
+    [len int]))
+
 ;;
 ;; Device Methods
 ;;
 
 (define echo-open
   (lambda (dev fflags)
-    CUSE_ERR_NONE))
+    (let* ([raw-handle (foreign-alloc (ftype-sizeof echo-handle))]
+	   [handle (make-ftype-pointer echo-handle raw-handle)])
+      (ftype-set! echo-handle (data) handle 0)
+      (ftype-set! echo-handle (len) handle 0)
+      (cuse-dev-set-per-file-handle dev raw-handle)
+      CUSE_ERR_NONE)))
 
 (define echo-close
   (lambda (dev fflags)
-    CUSE_ERR_NONE))
+    (let* ([raw-handle (cuse-dev-get-per-file-handle dev)]
+	   [handle (make-ftype-pointer echo-handle raw-handle)])
+      (cuse-dev-set-per-file-handle dev 0)
+      (foreign-free (ftype-ref echo-handle (data) handle))
+      (foreign-free raw-handle)
+      CUSE_ERR_NONE)))
 
 (define echo-read
   (lambda (dev fflags peer-ptr len)
-    CUSE_ERR_NONE))
+    (let* ([raw-handle (cuse-dev-get-per-file-handle dev)]
+	   [handle (make-ftype-pointer echo-handle raw-handle)]
+	   [data (ftype-ref echo-handle (data) handle)])
+      (if (= 0 data)
+	  CUSE_ERR_FAULT
+	  (let* ([datalen (ftype-ref echo-handle (len) handle)]
+		 [readlen (min len datalen)]
+		 [error (cuse-copy-out data peer-ptr readlen)])
+	    (if (= CUSE_ERR_NONE error)
+		readlen
+		error))))))
 
 (define echo-write
   (lambda (dev fflags peer-ptr len)
-    CUSE_ERR_NONE))
+    (let* ([raw-handle (cuse-dev-get-per-file-handle dev)]
+	   [handle (make-ftype-pointer echo-handle raw-handle)]
+	   [datalen (ftype-ref echo-handle (len) handle)]
+	   [data (let ([origdata (ftype-ref echo-handle (data) handle)])
+		   (if (<= len datalen)
+		       origdata
+		       (let ([newdata (foreign-alloc len)])
+			 (foreign-free origdata)
+			 (ftype-set! echo-handle (data) handle newdata)
+			 (ftype-set! echo-handle (len) handle len)
+			 newdata)))]
+	   [error (cuse-copy-in peer-ptr data len)])
+      (if (= CUSE_ERR_NONE error)
+	  len
+	  error))))
 
 (define echo-ioctl
   (lambda (dev fflags cmd peer-data)
