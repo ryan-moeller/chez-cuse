@@ -15,9 +15,17 @@ task:
         image_family: freebsd-15-0-snap
   stateful: false
   tests_file:
-    path: tests.ss
+    path: tests.lua
     from_contents: |
-      (import (cuse))
-      ; TODO: functional testing
+      f = io.open('/dev/echo0', 'w+')
+      f:write('hello!')
+      f:flush()
+      assert(f:read(6) == 'hello!')
+      assert(f:read(12) == 'hello!hello!')
+      f:close()
   setup_script: pkg install -y chez-scheme
-  test_script: chez-scheme tests.ss
+  load_script: kldload -n cuse
+  echo_background_script: chez-scheme echo.ss
+  # Give the script a second to start.
+  wait_script: test -c /dev/echo0 || sleep 1
+  test_script: /usr/libexec/flua tests.lua
