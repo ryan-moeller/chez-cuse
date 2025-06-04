@@ -17,8 +17,8 @@
           cuse-ioctl
           cuse-poll
           cuse-methods
-          uid
-          gid
+          uid_t
+          gid_t
           cuse-dev-create
           cuse-dev-destroy
           cuse-dev-get-priv0
@@ -125,18 +125,18 @@
         [write (* cuse-write)]
         [ioctl (* cuse-ioctl)]
         [poll (* cuse-poll)])]
-    [uid unsigned-32]
-    [gid unsigned-32])
+    [uid_t unsigned-32]
+    [gid_t unsigned-32])
 
   (define-syntax cuse-dev-create
     (syntax-rules ()
-      [(_ methods priv0 priv1 uid_ gid_ permission fmt)
-       (cuse-dev-create methods priv0 priv1 uid_ gid_ permission fmt ())]
-      [(_ methods priv0 priv1 uid_ gid_ permission fmt (t ...) e ...)
+      [(_ methods priv0 priv1 uid gid permission fmt)
+       (cuse-dev-create methods priv0 priv1 uid gid permission fmt ())]
+      [(_ methods priv0 priv1 uid gid permission fmt (t ...) e ...)
        ((foreign-procedure (__varargs_after 7)
-			   "cuse_dev_create"
-			   ((* cuse-methods) void* void* uid gid int string t ...) cuse-dev*)
-	methods priv0 priv1 uid_ gid_ permission fmt e ...)]))
+                           "cuse_dev_create"
+                           ((* cuse-methods) void* void* uid_t gid_t int string t ...) cuse-dev*)
+        methods priv0 priv1 uid gid permission fmt e ...)]))
 
   (define cuse-dev-destroy
     (foreign-procedure "cuse_dev_destroy" (cuse-dev*) void))
