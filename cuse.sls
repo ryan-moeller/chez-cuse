@@ -19,6 +19,7 @@
           cuse-methods
           uid_t
           gid_t
+          make-cuse-methods
           cuse-dev-create
           cuse-dev-destroy
           cuse-dev-get-priv0
@@ -127,6 +128,25 @@
         [poll (* cuse-poll)])]
     [uid_t unsigned-32]
     [gid_t unsigned-32])
+
+  (define make-cuse-methods
+    (lambda (open close read write ioctl poll)
+      (let ([methods (make-ftype-pointer
+                      cuse-methods
+                      (foreign-alloc (ftype-sizeof cuse-methods)))])
+        (ftype-set! cuse-methods (open)
+                    methods (make-ftype-pointer cuse-open open))
+        (ftype-set! cuse-methods (close)
+                    methods (make-ftype-pointer cuse-close close))
+        (ftype-set! cuse-methods (read)
+                    methods (make-ftype-pointer cuse-read read))
+        (ftype-set! cuse-methods (write)
+                    methods (make-ftype-pointer cuse-write write))
+        (ftype-set! cuse-methods (ioctl)
+                    methods (make-ftype-pointer cuse-ioctl ioctl))
+        (ftype-set! cuse-methods (poll)
+                    methods (make-ftype-pointer cuse-poll poll))
+        methods)))
 
   (define-syntax cuse-dev-create
     (syntax-rules ()
