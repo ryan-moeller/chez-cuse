@@ -1,0 +1,35 @@
+name: "FreeBSD 15.1"
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    name: test on FreeBSD 15.1
+    steps:
+      - uses: actions/checkout@v6
+      - uses: vmactions/freebsd-vm@v1
+        with:
+          release: "15.1"
+          cache-after-prepare: true
+          prepare: |
+            pkg install -y \
+              chez-scheme
+          run: |
+            set -e
+            kldload -n cuse
+            chez-scheme --script echo.ss &
+            test -c /dev/echo0 || sleep 1
+            /usr/libexec/flua <<EOF
+            f = assert(io.open('/dev/echo0', 'w+'))
+            assert(f:write('hello!'))
+            assert(f:flush())
+            assert(f:read(6) == 'hello!')
+            assert(f:read(12) == 'hello!hello!')
+            f:close()
+            EOF
+            kill %1
